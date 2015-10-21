@@ -55,12 +55,15 @@ class webServerHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
                 output = ""
-                output += "<html><body><h1>Restaurants</h1><h2>"
+                output += "<html><body><h1>Restaurants</h1>"
                 res = session.query(Restaurant).all()
                 for each in res:
+                    output += "<h2>"
                     output += each.name
-                    output += "<br/>"
-                output += "</h2></body></html>"
+                    output += "</h2>"
+                    output += "<a herf = '#'>Delete</a><br/>"
+                    output += "<a herf = '#'>Edit</a>"
+                output += "</body></html>"
                 self.wfile.write(output)
                 print output
                 return
