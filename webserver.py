@@ -1,5 +1,14 @@
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import cgi
+from database_setup import Restaurant, MenuItem, Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+#connect to database
+engine = create_engine('sqlite:///restaurantmenu.db')
+Base.metadata.bind = engine
+DBsession = sessionmaker(bind = engine)
+session = DBsession()
 
 ###handler:indicate what code to execute based on the request sent to the server
 #BaseHTTPRequestHandler must be subclassed to handle each request method (e.g. GET or POST)
@@ -37,6 +46,21 @@ class webServerHandler(BaseHTTPRequestHandler):
                              action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" >
                              <input type="submit" value="Submit"> </form>'''
                 output += "</body></html>"
+                self.wfile.write(output)
+                print output
+                return
+            if self.path.endswith("/restaurant"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                output = ""
+                output += "<html><body><h1>Restaurants</h1><h2>"
+                res = session.query(Restaurant).all()
+                for each in res:
+                    output += each.name
+                    output += "<br/>"
+                output += "</h2></body></html>"
                 self.wfile.write(output)
                 print output
                 return
