@@ -49,49 +49,86 @@ class webServerHandler(BaseHTTPRequestHandler):
                 self.wfile.write(output)
                 print output
                 return
+            
             if self.path.endswith("/restaurant"):
+                res = session.query(Restaurant).all()
+                output = ""
+                # Objective 3 Step 1 - Create a Link to create a new menu item
+                output += "<a href = '/restaurant/new' > Make a New Restaurant Here </a></br></br>"
+
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                output += "<html><body><h1>Restaurants</h1>"
+                for each in res:
+                    output += "<h3>"
+                    output += each.name
+                    output += "</h3>"
+                    output += "<a herf = '#'>Delete</a><br/>"
+                    output += "<a herf = '#'>Edit</a><br/>"
+                output += "</body></html>"
+                self.wfile.write(output)
+                print output
+                return
+            
+            if self.path.endswith("/restaurant/new"):
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
                 output = ""
-                output += "<html><body><h1>Restaurants</h1>"
-                res = session.query(Restaurant).all()
-                for each in res:
-                    output += "<h2>"
-                    output += each.name
-                    output += "</h2>"
-                    output += "<a herf = '#'>Delete</a><br/>"
-                    output += "<a herf = '#'>Edit</a>"
-                output += "</body></html>"
+                output += "<html><body><h1>Add a New Restaurant</h1>"
+                output += "<form method='POST' enctype='multipart/form-data action = '/restaurant/new'>"
+                output += "<input name= 'newRestaurant' type= 'text' placeholder = 'New Restaurant Name'>"
+                output += "<input type = 'submit' value = 'Create'>"
+                output += "</form></body></html>"
                 self.wfile.write(output)
                 print output
                 return
         except IOError:
             self.send_error(404, "File Not Found %s" % self.path)
+            
     def do_POST(self):
         try:
-            self.send_response(301)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
+            if self.path.endswith("/restaurant/new"):
+                ctype, pdict = cgi.parse_header(
+                    self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    messagecontent = fields.get('newRestaurant')
 
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'multipart/form-data':
-                fields = cgi.parse_multipart(self.rfile, pdict)
-                messagecontent = fields.get('message')
+                    # Create new Restaurant Object
+                    newRestaurant = Restaurant(name=messagecontent[0])
+                    session.add(newRestaurant)
+                    session.commit()
 
-                output = ""
-                output += "<html><body>"
-                output += "<h2> OK, how about this: </h2>"
-                output += "<h1> %s </h1>" % messagecontent[0]
+                    self.send_response(301)
+                    self.send_header('Content-type', 'text/html')
+                    self.send_header('Location', '/restaurants')
+                    self.end_headers()
+ 
+            #self.send_response(301)
+            #self.send_header('Content-type', 'text/html')
+            #self.end_headers()
 
-                output += '''<form method='POST' enctype='multipart/form-data' action='/hello'>
-                          <h2>What would you like me to say?</h2><input name="message" type="text" >
-                          <input type="submit" value="Submit"> </form>'''
-                output += "</body></html>"
-                self.wfile.write(output)
-                print output
-                return
+            #ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+            #if ctype == 'multipart/form-data':
+            #    fields = cgi.parse_multipart(self.rfile, pdict)
+            #    messagecontent = fields.get('message')
+
+            #    output = ""
+            #    output += "<html><body>"
+            #    output += "<h2> OK, how about this: </h2>"
+            #    output += "<h1> %s </h1>" % messagecontent[0]
+
+            #    output += '''<form method='POST' enctype='multipart/form-data' action='/hello'>
+            #              <h2>What would you like me to say?</h2><input name="message" type="text" >
+            #              <input type="submit" value="Submit"> </form>'''
+            #    output += "</body></html>"
+            #    self.wfile.write(output)
+            #   print output
+            #   return
         except:
             pass
     
