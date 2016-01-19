@@ -15,6 +15,30 @@ class webServerHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            if self.path.endswith("/restaurants"):
+                restaurants = session.query(Restaurant).all()
+                output = ""
+                # Objective 3 Step 1 - Create a Link to create a new menu item
+                output += "<a href = '/restaurants/new' > Make a New Restaurant Here </a></br></br>"
+
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                output += "<html><body>"
+                for restaurant in restaurants:
+                    output += restaurant.name
+                    output += "</br>"
+                    # Objective 2 -- Add Edit and Delete Links
+                    output += "<a href ='/restaurants/%s/edit'>Edit </a> " % restaurant.id
+                    output += "</br>"
+                    output += "<a href ='/restaurants/%s/delete'>Delete</a>" % restaurant.id
+                    output += "</br></br></br>"
+
+                output += "</body></html>"
+                self.wfile.write(output)
+                return
+
             # Objective 3 Step 2 - Create /restarants/new page
             if self.path.endswith("/restaurants/new"):
                 self.send_response(200)
@@ -30,33 +54,10 @@ class webServerHandler(BaseHTTPRequestHandler):
                 self.wfile.write(output)
                 return
 
-            if self.path.endswith("/restaurants"):
-                restaurants = session.query(Restaurant).all()
-                output = ""
-                # Objective 3 Step 1 - Create a Link to create a new menu item
-                output += "<a href = '/restaurants/new' > Make a New Restaurant Here </a></br></br>"
-
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                output += "<html><body>"
-                for restaurant in restaurants:
-                    output += restaurant.name
-                    output += "</br>"
-                    # Objective 2 -- Add Edit and Delete Links
-                    output += "<a href ='/restaurants/%s/edit'>Edit </a> " % restaurant.id
-                    output += "</br>"
-                    output += "<a href ='/restaurants/%s/delete'>Delete</a>" % restaurant.id
-                    output += "</br></br></br>"
-
-                output += "</body></html>"
-                self.wfile.write(output)
-                return
-
             if self.path.endswith("/edit"):
                 RID = self.path.split("/")[2]
-                TheRestaurant = session.query(Restaurant).filter_by(id = RID).one()
-                if TheRestaurant:
+                TheRestaurantQuery = session.query(Restaurant).filter_by(id = RID).one()
+                if TheRestaurantQuery != []:
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
@@ -64,14 +65,15 @@ class webServerHandler(BaseHTTPRequestHandler):
                     output = ""
                     output += "<html><body>"
                     output += "<h1>"
-                    output += TheRestaurant.name
+                    output += TheRestaurantQuery.name
                     output += "<h1>"
                     output += "<form method = 'POST' enctype = 'multipart/form-data' action = 'restaurants/%s/edit'>" % RID
-                    output += "<input name = 'newRestaurantName', type = 'text' placeholder = '%s'>" % TheRestaurant.name
+                    output += "<input name = 'newRestaurantName', type = 'text' placeholder = '%s'>" % TheRestaurantQuery.name
                     output += "<input type = 'submit' value = 'Rename'>"
                     output += "</form>"
                     output += "</body></html>"
                     self.wfile.write(output)
+                    
             if self.path.endswith("/delete"):
                 restaurantIDPath = self.path.split("/")[2]
 
@@ -112,6 +114,8 @@ class webServerHandler(BaseHTTPRequestHandler):
                     self.send_header('Location', '/restaurants')
                     self.end_headers()
 
+                    return
+
             if self.path.endswith("/edit"):
                 ctype, pdict = cgi.parse_header(
                     self.headers.getheader('content-type'))
@@ -134,7 +138,7 @@ class webServerHandler(BaseHTTPRequestHandler):
                 restaurantIDPath = self.path.split("/")[2]
                 myRestaurantQuery = session.query(Restaurant).filter_by(
                     id=restaurantIDPath).one()
-                if myRestaurantQuery:
+                if myRestaurantQuery != []:
                     session.delete(myRestaurantQuery)
                     session.commit()
                     self.send_response(301)
@@ -148,7 +152,8 @@ class webServerHandler(BaseHTTPRequestHandler):
 
 def main():
     try:
-        server = HTTPServer(('', 8080), webServerHandler)
+        port = 8080
+        server = HTTPServer(('', port), webServerHandler)
         print 'Web server running... Open localhost:8080/restaurants in your browser'
         server.serve_forever()
     except KeyboardInterrupt:
